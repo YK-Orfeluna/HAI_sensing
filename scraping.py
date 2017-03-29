@@ -2,7 +2,7 @@
 import lxml.html
 import requests as rq
 
-target_url = "http://192.168.11.3/"
+target_url = "http://192.168.11.10/"
 target_html = rq.get(target_url).text
 
 root = lxml.html.fromstring(target_html)
