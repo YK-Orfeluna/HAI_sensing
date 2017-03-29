@@ -1,23 +1,51 @@
+//IP: 192, 168, 11, 10
+
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 
-const char* ssid = "........";
-const char* password = "........";
+const char* ssid = "0024A5B57EBC";
+const char* password = "mxte5ttdejm8s";
 
 ESP8266WebServer server(80);
 
-const int led = 13;
+const int LED = 13;
+const char HEAD = 'H';
+
+int hr = 0;
+int gsr = 0;
 
 void handleRoot() {
-  digitalWrite(led, 1);
-  server.send(200, "text/plain", "hello from esp8266!");
-  digitalWrite(led, 0);
+   // 受信バッファに３バイト（ヘッダ＋int）以上のデータが着ているか確認
+  if (Serial.available() >= sizeof(HEAD) + sizeof(int)) {
+    // ヘッダの確認
+    if(Serial.read() == HEAD){
+      int low1 = Serial.read(); // 下位バイトの読み取り
+      int high1 = Serial.read(); // 上位バイトの読み取り
+      hr = makeWord(high1, low1); // 上位バイトと下位バイトを合体させてint型データを復元
+
+      int low2 = Serial.read(); // 下位バイトの読み取り
+      int high2 = Serial.read(); // 上位バイトの読み取り
+      gsr = makeWord(high2, low2);
+    }
+  }
+
+  if(hr > 500){
+    digitalWrite(LED, 1);
+  }
+  else{
+    digitalWrite(LED, 0);
+  }
+
+  String hr_s = String(hr, DEC);
+  String gsr_s = String(gsr, DEC);
+
+  server.send(200, "text/plain", "sensorvalue=" + hr_s + gsr_s);
 }
 
 void handleNotFound(){
-  digitalWrite(led, 1);
+  digitalWrite(LED, 1);
   String message = "File Not Found\n\n";
   message += "URI: ";
   message += server.uri();
@@ -30,12 +58,12 @@ void handleNotFound(){
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
   server.send(404, "text/plain", message);
-  digitalWrite(led, 0);
+  digitalWrite(LED, 0);
 }
 
 void setup(void){
-  pinMode(led, OUTPUT);
-  digitalWrite(led, 0);
+  pinMode(LED, OUTPUT);
+  digitalWrite(LED, 0);
   Serial.begin(115200);
   WiFi.begin(ssid, password);
   Serial.println("");
@@ -46,7 +74,7 @@ void setup(void){
     Serial.print(".");
   }
 
-  WiFi.config(IPAddress(192, 168, 0, 99), WiFi.gatewayIP(), WiFi.subnetMask());
+  WiFi.config(IPAddress(192, 168, 11, 10), WiFi.gatewayIP(), WiFi.subnetMask());
   //http://ashiyu.cocolog-nifty.com/blog/2015/08/indexhtml-8dfa.html
 
   Serial.println("");

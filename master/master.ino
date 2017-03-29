@@ -1,5 +1,4 @@
-//const char* HEAD = "H";    //header
-char header = "H";
+char HEAD = 'H';
 int hr = 0;           //sensor-value(HR)
 int gsr = 0;          //sensor-value(GSR)
 
@@ -14,7 +13,7 @@ void setup() {
 void loop() {
 
   // 受信バッファに３バイト（ヘッダ＋int）以上のデータが着ているか確認
-  if (Serial.available() >= sizeof('H') + sizeof(int)) {
+  if (Serial.available() >= sizeof(HEAD) + sizeof(int)) {
     // ヘッダの確認
     if(Serial.read() == HEAD){
       int low1 = Serial.read(); // 下位バイトの読み取り
