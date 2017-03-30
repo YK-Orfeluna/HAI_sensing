@@ -17,32 +17,11 @@ const char CNM = ',';
 int hr = 0;
 int gsr = 0;
 
+String hr_s, gsr_s;
+
 void handleRoot() {
-   // 受信バッファに３バイト（ヘッダ＋int）以上のデータが着ているか確認
-  if (Serial.available() >= sizeof(HEAD) + sizeof(int)) {
-    // ヘッダの確認
-    if(Serial.read() == HEAD){
-      int low1 = Serial.read(); // 下位バイトの読み取り
-      int high1 = Serial.read(); // 上位バイトの読み取り
-      hr = makeWord(high1, low1); // 上位バイトと下位バイトを合体させてint型データを復元
-
-      int low2 = Serial.read(); // 下位バイトの読み取り
-      int high2 = Serial.read(); // 上位バイトの読み取り
-      gsr = makeWord(high2, low2);
-    }
-  }
-
-  if(hr > 500){
-    digitalWrite(LED, 1);
-  }
-  else{
-    digitalWrite(LED, 0);
-  }
-
-  String hr_s = String(hr, DEC);
-  String gsr_s = String(gsr, DEC);
-
   server.send(200, "text/plain", "sensorvalue=" + hr_s + CNM + gsr_s);
+
 }
 
 void handleNotFound(){
@@ -65,7 +44,7 @@ void handleNotFound(){
 void setup(void){
   pinMode(LED, OUTPUT);
   digitalWrite(LED, 0);
-  Serial.begin(115200);
+  Serial.begin(9600);
   WiFi.begin(ssid, password);
   Serial.println("");
 
@@ -101,5 +80,35 @@ void setup(void){
 }
 
 void loop(void){
+   // 受信バッファに３バイト（ヘッダ＋int）以上のデータが着ているか確認
+  if (Serial.available() >= sizeof(HEAD) + sizeof(int)) {
+    // ヘッダの確認
+    if(Serial.read() == HEAD){
+      Serial.println(HEAD);
+      int low1 = Serial.read(); // 下位バイトの読み取り
+      int high1 = Serial.read(); // 上位バイトの読み取り
+      hr = makeWord(high1, low1); // 上位バイトと下位バイトを合体させてint型データを復元
+
+      int low2 = Serial.read(); // 下位バイトの読み取り
+      int high2 = Serial.read(); // 上位バイトの読み取り
+      gsr = makeWord(high2, low2);
+    }
+  }
+
+  if(hr > 500){
+    digitalWrite(LED, 1);
+  }
+  else{
+    digitalWrite(LED, 0);
+  }
+
+  hr_s = String(hr, DEC);
+  gsr_s = String(gsr, DEC);
+
+  
+  Serial.print(hr);
+  Serial.print("&");
+  Serial.println(gsr);
+  
   server.handleClient();
 }

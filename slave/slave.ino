@@ -17,7 +17,7 @@ void loop() {
   hr = analogRead(HR);
   gsr = analogRead(GSR);
 
-  sendIntData(12345, 100); // int型データの送信
+  sendIntData(hr, gsr); // int型データの送信
 
   delay(100);
 
