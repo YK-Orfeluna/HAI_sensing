@@ -12,6 +12,7 @@ ESP8266WebServer server(80);
 
 const int LED = 13;
 const char HEAD = 'H';
+const char FOOT = 'F';
 const char CNM = ',';
 
 int hr = 0;
@@ -24,24 +25,24 @@ void handleRoot() {
 
 }
 
-void handleNotFound(){
+void handleNotFound() {
   digitalWrite(LED, 1);
   String message = "File Not Found\n\n";
   message += "URI: ";
   message += server.uri();
   message += "\nMethod: ";
-  message += (server.method() == HTTP_GET)?"GET":"POST";
+  message += (server.method() == HTTP_GET) ? "GET" : "POST";
   message += "\nArguments: ";
   message += server.args();
   message += "\n";
-  for (uint8_t i=0; i<server.args(); i++){
+  for (uint8_t i = 0; i < server.args(); i++) {
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
   server.send(404, "text/plain", message);
   digitalWrite(LED_BUILTIN, 0);
 }
 
-void setup(void){
+void setup(void) {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
   Serial.begin(9600);
@@ -69,7 +70,7 @@ void setup(void){
 
   server.on("/", handleRoot);
 
-  server.on("/inline", [](){
+  server.on("/inline", []() {
     server.send(200, "text/plain", "this works as well");
   });
 
@@ -79,36 +80,37 @@ void setup(void){
   Serial.println("HTTP server started");
 }
 
-void loop(void){
-   // 受信バッファに３バイト（ヘッダ＋int）以上のデータが着ているか確認
+void loop(void) {
+  // 受信バッファに３バイト（ヘッダ＋int）以上のデータが着ているか確認
   if (Serial.available() >= sizeof(HEAD) + sizeof(int)) {
     // ヘッダの確認
-    if(Serial.read() == HEAD){
+    if (Serial.read() == HEAD) {
       Serial.println(HEAD);
       int low1 = Serial.read(); // 下位バイトの読み取り
       int high1 = Serial.read(); // 上位バイトの読み取り
       hr = makeWord(high1, low1); // 上位バイトと下位バイトを合体させてint型データを復元
-
+    }
+    if (Serial.read() == FOOT) {
       int low2 = Serial.read(); // 下位バイトの読み取り
       int high2 = Serial.read(); // 上位バイトの読み取り
       gsr = makeWord(high2, low2);
     }
   }
 
-  if(hr > 500){
+  if (hr > 500) {
     digitalWrite(LED_BUILTIN, HIGH);
   }
-  else{
+  else {
     digitalWrite(LED_BUILTIN, LOW);
   }
 
   hr_s = String(hr, DEC);
   gsr_s = String(gsr, DEC);
 
-  
+
   Serial.print(hr);
   Serial.print("&");
   Serial.println(gsr);
-  
+
   server.handleClient();
 }
