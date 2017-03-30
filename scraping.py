@@ -8,7 +8,7 @@ target_url = "http://192.168.11.10/"
 for i in range(100) :
 	target_html = rq.get(target_url).text
 	root = lxml.html.fromstring(target_html)
-	#print(root.text)
+	print(root.text)
 	txt = root.text
 	time.sleep(0.01)
 
@@ -32,5 +32,5 @@ for i in range(100) :
 	val1 = int(val1)
 	val2 = int(val2)
 
-	print (val1)
-	print (val2)
+	#print (val1)
+	#print (val2)
