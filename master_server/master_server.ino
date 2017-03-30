@@ -38,12 +38,12 @@ void handleNotFound(){
     message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
   }
   server.send(404, "text/plain", message);
-  digitalWrite(LED, 0);
+  digitalWrite(LED_BUILTIN, 0);
 }
 
 void setup(void){
-  pinMode(LED, OUTPUT);
-  digitalWrite(LED, 0);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
   Serial.begin(9600);
   WiFi.begin(ssid, password);
   Serial.println("");
@@ -96,10 +96,10 @@ void loop(void){
   }
 
   if(hr > 500){
-    digitalWrite(LED, 1);
+    digitalWrite(LED_BUILTIN, HIGH);
   }
   else{
-    digitalWrite(LED, 0);
+    digitalWrite(LED_BUILTIN, LOW);
   }
 
   hr_s = String(hr, DEC);
