@@ -19,7 +19,7 @@ void loop() {
 
   sendIntData(hr, gsr); // int型データの送信
 
-  delay(100);
+  delay(10);
 
 }
 
