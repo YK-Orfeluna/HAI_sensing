@@ -12,6 +12,7 @@ ESP8266WebServer server(80);
 
 const int LED = 13;
 const char HEAD = 'H';
+const char CNM = ',';
 
 int hr = 0;
 int gsr = 0;
@@ -41,7 +42,7 @@ void handleRoot() {
   String hr_s = String(hr, DEC);
   String gsr_s = String(gsr, DEC);
 
-  server.send(200, "text/plain", "sensorvalue=" + hr_s + gsr_s);
+  server.send(200, "text/plain", "sensorvalue=" + hr_s + CNM + gsr_s);
 }
 
 void handleNotFound(){
