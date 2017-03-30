@@ -5,8 +5,8 @@ const int LED = 13;
 int hr = 0;         //sensor-value(HR)
 int gsr = 0;        //sensor-value(GSR)
 
-const char* HEAD = "H";
-const char* FOOT = "F";
+const char HEAD = 'H';
+const char FOOT = 'F';
 
 void setup() {
   Serial.begin(9600);
