@@ -2,11 +2,12 @@
 
 import time, sys
 
+import cv2, pyfirmata, thinkgear
 import numpy as np
 from scipy import signal
 import pandas as pd
-import serial, pyfirmata
-import cv2
+
+# scraping用のモジュール
 import lxml.html
 import requests as rq
 
@@ -30,16 +31,20 @@ C_TIME = 15							# キャリブレーションする時間
 WINDOW_NAME = "dst"
 IMAGE = np.zeros([500, 500, 3], dtype=np.uint8)
 
-fps = 30
+FPS = 30
 
 NOUT = 10
 F = np.linspace(LF_MIN, HF_MAX, NOUT)		# 検出したい周波数帯域
 L = np.where(F<LF_MAX)[0][-1] + 1			# HFとLFの仕分け用の閾値
 
-LED_HR = 4								# 心拍確認用LED
-LED = 2									# 動作確認用LED
+PORT = '/dev/tty.MindWaveMobile-DevA'	# PORTを$ls /dev/tty.*で確認しておく
 
-LABEL = np.array(["Unix", "TimeStamp", "GSR", "BPM", "RRI", "HF", "LF", "HF(%)", "LF(%)"])
+STR_1 = "ASIC EEG Power: EEGPowerData("
+STR_2 = ")"
+STR_3 = ", "
+
+NAME = np.array(["delta=", "theta=", "lowalpha=", "highalpha=", "lowbeta=", "highbeta=", "lowgamma=", "midgamma="])
+LABEL = np.array(["Unix", "TimeStamp", "GSR", "BPM", "RRI", "HF", "LF", "HF(%)", "LF(%)", "Delta", "Theta", "Low_Alfa", "High_Alfa", "Low_Beta", "High_Beta", "Low_Gamma", "Mid_Gamma"])])
 
 URL = "http://192.168.11.10/"
 TARGET_TXT = "sensorvalue="
@@ -50,7 +55,7 @@ def rnd(value, cnm=0) :
 		out = int(out)
 	return out
 
-WAIT = rnd(1000.0 / fps)
+WAIT = rnd(1000.0 / FPS)
 
 def stamp() :
 	t = time.localtime()
@@ -81,6 +86,11 @@ class App() :
 		self.rri_box = np.array([])		# RRIを貯める
 
 		self.box = np.zeros([1, LABEL.shape[0]])
+
+	def brain_init() :
+		self.th = thinkgear.ThinkGearProtocol(PORT)
+		self.think = self.th.get_packets()
+		print("Connect BrainWave")
 
 	def scraping(self) :
 		target_html = rq.get(URL).text
@@ -213,7 +223,38 @@ class App() :
 
 		sys.exit("System Exit")
 
+	def brainwave(self, p) :
+		if isinstance(p, thinkgear.ThinkGearRawWaveData):		# Rawデータを取り除く
+			continue
+		if isinstance(p, thinkgear.ThinkGearPoorSignalData):	# Poorシグナルを取り除く	
+			continue
+		if isinstance(p, thinkgear.ThinkGearAttentionData):		# Attention値を取り除く
+			continue
+		if isinstance(p, thinkgear.ThinkGearMeditationData):	# Meditation値を取り除く
+			continue
+		#if isinstance(p, thinkgear.ThinkGearEEGPowerData):		# フーリエ変換されたデータを取り除く	
+		#	continue
+
+		p = str(p)					# pをstrに変換
+		p = p.lstrip(STR_1)			# pから余分な文字を取り除く
+		p = p.rstrip(STR_2)
+		p = p.split(STR_3)			# pを", "で区切ってlist形式に
+
+		t = time.localtime()
+
+		self.time_brain = time.time()
+		result = [time.time(), stamp()]
+		for x, i in enumerate(p) :
+			out = i.lstrip(NAME[x])
+			result.append(out)
+	
+		out = np.array([result])
+		if DEBUG :
+			print(out)
+		return out
+
 	def main(self) :
+		self.brain_init()
 
 		self.beat_calib()
 		self.psd()
@@ -221,33 +262,37 @@ class App() :
 		start_time = time.time()
 		csv_flag = 1
 
-		while True :
-			self.scraping()
-			self.beat()
-			gsr = self.gsr()
+		for packets in self.think :
+			for p in packets :
+				brain = self.brainwave(p)		# 脳波を保存
+				
+				self.scraping()					# Arduinoサーバからデータ取得
+				self.beat()						# センサ値から心拍算出
+				gsr = self.gsr()				# センサ値をgsrに代入
 
-			cv2.imshow(WINDOW_NAME, IMAGE)
-			key = cv2.waitKey(WAIT)
-			if key == 27 :
-				break
+				if GSR_FLAG and self.heartrate_flag == 1 :
+					add = np.array([[time.time(), stamp(), gsr, self.bpm, self.rri, self.hf, self.lf, self.hf_p, self.lf_p]])
+					add = np.append(add, brain, axis=1)
+					self.box = np.append(self.box, add, axis=0)
 
-			if GSR_FLAG and self.heartrate_flag == 1 :
-				add = np.array([[time.time(), stamp(), gsr, self.bpm, self.rri, self.hf, self.lf, self.hf_p, self.lf_p]])
-				self.box = np.append(self.box, add, axis=0)
+				elif GSR_FLAG == False :
+					add = np.array([[time.time(), stamp(), gsr, self.bpm, self.rri, self.hf, self.lf, self.hf_p, self.lf_p]])
+					add = np.append(add, brain, axis=1)
+					self.box = np.append(self.box, add, axis=0)
 
-			elif GSR_FLAG == False :
-				add = np.array([[time.time(), stamp(), gsr, self.bpm, self.rri, self.hf, self.lf, self.hf_p, self.lf_p]])
-				self.box = np.append(self.box, add, axis=0)
+				cv2.imshow(WINDOW_NAME, IMAGE)
+				key = cv2.waitKey(WAIT)
+				if key == 27 :
+					break
 
-			# To save data-array each 10min.
-			now_time = time.time()
-			if now_time - start_time >= 60 * 10 :
-				self.write(name=str(csv_flag))
-				start_time = now_time
-				csv_flag += 1
+				# To save data-array each 10min.
+				now_time = time.time()
+				if now_time - start_time >= 60 * 10 :
+					self.write(name=str(csv_flag))
+					start_time = now_time
+					csv_flag += 1
 
-
-
+			
 if __name__ == "__main__" :
 	print("System Begin")
 	app = App()
