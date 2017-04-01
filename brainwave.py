@@ -36,21 +36,11 @@ class Mind() :
 	def __init__(self) :
 		self.img1 = np.zeros([500, 500, 1])
 		self.brain = np.zeros([1, LABEL.shape[0]])
-		self.flag = -1
-
-	def make_image(self) :
-		cv2.putText(self.img1, WINDOWNAME, (150, 100), cv2.FONT_HERSHEY_PLAIN, 2, 255, 2, cv2.CV_AA)
-		cv2.putText(self.img1, "Push 'Enter': Flag ON / OFF", (10, 200), cv2.FONT_HERSHEY_PLAIN, 2, 255, 2, cv2.CV_AA)
-		cv2.putText(self.img1, "Push 'esc': Save CSV & Exit", (10, 300), cv2.FONT_HERSHEY_PLAIN, 2, 255, 2, cv2.CV_AA)
-		self.img2 = self.img1.copy()
-		cv2.putText(self.img1, "flag: -1", (10, 400), cv2.FONT_HERSHEY_PLAIN, 2, 255, 2, cv2.CV_AA)
-		cv2.putText(self.img2, "flag: 1", (10, 400), cv2.FONT_HERSHEY_PLAIN, 2, 255, 2, cv2.CV_AA)
 
 	def set(self) :
 		self.th = thinkgear.ThinkGearProtocol(PORT)
 		self.think = self.th.get_packets()
 		print(self.think)
-		self.make_image()
 
 	def make_zero(self, value) :
 		out = str(value)
@@ -108,10 +98,6 @@ class Mind() :
 				#	continue
 
 				self.brain = np.append(self.brain, self.brainwave(p), axis=0)
-				if self.flag == -1 :
-					cv2.imshow(WINDOWNAME, self.img1)
-				else :
-					cv2.imshow(WINDOWNAME, self.img2)
 
 				fps = int((1 - (time.time() - self.time_brain)) * 1000) - 100
 				
@@ -119,9 +105,6 @@ class Mind() :
 				if KEY == key.esc :
 					self.csv()
 					self.finish()
-				elif KEY == key.enter :
-					self.flag *= -1
-					print("Change Flag to %d" %self.flag)
 
 				now_time = time.time()
 				if now_time - start_time >= 10 * 60 :
