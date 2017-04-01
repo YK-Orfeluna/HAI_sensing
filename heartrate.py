@@ -3,7 +3,6 @@
 import time, sys
 
 import numpy as np
-#import scipy as sp
 from scipy import signal
 import pandas as pd
 import serial, pyfirmata
@@ -17,7 +16,6 @@ DEBUG = True
 GSR_FLAG = True
 #GSR_FLAG = False
 
-#HEARTRATE_LINE = 0
 HEARTRATE_LINE = 500
 
 LF_MIN = 0.05
@@ -28,12 +26,6 @@ HF_MAX = 0.4
 CNT = 10							# RRIの数
 CNT *= -1
 C_TIME = 15							# キャリブレーションする時間
-
-PORT = "/dev/cu.usbmodem1411"		# Arduino port: ls /dev/cu*
-#PORT = "/dev/cu.usbmodem1421"		# Arduino port: ls /dev/cu*
-
-HR = 0								# Position of Analog-pin into HR-sensor
-GSR = 2								# Position of Analog-pin into GSR-sensor
 
 WINDOW_NAME = "dst"
 IMAGE = np.zeros([500, 500, 3], dtype=np.uint8)
@@ -127,7 +119,6 @@ class App() :
 		self.galvanic = int(val2)
 
 	def beat(self, calib=False) :				# 心拍センサの値から，BPMとRRIを作る
-		#value = self.hr.read()
 		value = self.hr
 
 		if value > HEARTRATE_LINE :		
@@ -146,13 +137,10 @@ class App() :
 					print("BPM: %s" %self.bpm)
 					print("RRI: %s" %self.rri)
 
-				#self.board.digital[LED_HR].write(1)
-
 			self.heartrate_flag += 1
 
 		else :
 			self.heartrate_flag = 0
-			#self.board.digital[LED_HR].write(0)
 
 	def lomb(self) :				# Lomb-ScargleによるPSD計算
 		x = np.array([0])										# xは経過時間
@@ -193,7 +181,6 @@ class App() :
 			print("HF : LF = %s : %s" %(self.hf_p, self.lf_p))
 
 	def gsr(self) :
-		#value = self.galvanic.read() * 1023
 		value = self.galvanic
 
 		if DEBUG and self.heartrate_flag == 1:
@@ -245,7 +232,6 @@ class App() :
 		sys.exit("System Exit")
 
 	def main(self) :
-		#self.arduino_init()
 
 		self.beat_calib()
 		self.psd()
