@@ -27,7 +27,7 @@ def stamp() :
 	out = ""
 	for i in stamp :
 		s = str(i)
-		if i < 0 :
+		if i < 10 :
 			s = "0" + s
 		out += s
 	return out
