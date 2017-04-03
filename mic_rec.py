@@ -40,9 +40,19 @@ print("* recording")
 
 frames = []
 
+start_time = time.time()
+time_flag = 1
+
 for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
 	data = stream.read(CHUNK)
 	frames.append(data)
+
+	now_time = time.time()
+	pass_time = now_time - start_time
+	if pass_time >= 60 :
+		print("%s min." %time_flag)
+		time_flag += 1
+		now_time = start_time
 
 print("* done recording")
 
