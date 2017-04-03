@@ -2,6 +2,8 @@ const int HR = 1;        //Analog-pin(HR)
 const int GSR = 4;       //Analog-pin(GSR)
 const int LED = 13;
 
+const int THREAD = 500 ;
+
 int hr = 0;         //sensor-value(HR)
 int gsr = 0;        //sensor-value(GSR)
 
@@ -16,6 +18,12 @@ void setup() {
 
 void loop() {
   hr = analogRead(HR);
+  if(hr > THREAD){
+    digitalWrite(LED, HIGH);
+  }
+  else{
+    digitalWrite(LED, LOW);
+  }
   gsr = analogRead(GSR);
 
   sendIntData(hr, gsr); // int型データの送信
