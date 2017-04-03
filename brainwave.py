@@ -99,8 +99,8 @@ class Mind() :
 
 				self.brain = np.append(self.brain, self.brainwave(p), axis=0)
 
+				cv2.imshow(WINDOWNAME, self.img1)
 				fps = int((1 - (time.time() - self.time_brain)) * 1000) - 100
-				
 				KEY = cv2.waitKey(fps)
 				if KEY == key.esc :
 					self.csv()
