@@ -52,7 +52,7 @@ for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
 	if pass_time >= 60 :
 		print("%s min." %time_flag)
 		time_flag += 1
-		now_time = start_time
+		start_time = now_time
 
 print("* done recording")
 
