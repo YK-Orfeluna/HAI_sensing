@@ -1,3 +1,7 @@
+#include <Wire.h>
+const byte H = 'H';
+const byte G = 'G';
+
 //IP: 192, 168, 11, 10
 
 #include <ESP8266WiFi.h>
@@ -11,12 +15,11 @@ const char* password = "mxte5ttdejm8s";
 ESP8266WebServer server(80);
 
 const int LED = 13;
-const char HEAD = 'H';
-const char FOOT = 'F';
 const char CNM = ',';
 
 int hr = 0;
 int gsr = 0;
+const int THREAD = 500;
 
 String hr_s, gsr_s;
 
@@ -82,35 +85,31 @@ void setup(void) {
 
 void loop(void) {
   // 受信バッファに３バイト（ヘッダ＋int）以上のデータが着ているか確認
-  if (Serial.available() >= sizeof(HEAD) + sizeof(int)) {
-    // ヘッダの確認
-    if (Serial.read() == HEAD) {
-      Serial.println(HEAD);
-      int low1 = Serial.read(); // 下位バイトの読み取り
-      int high1 = Serial.read(); // 上位バイトの読み取り
-      hr = makeWord(high1, low1); // 上位バイトと下位バイトを合体させてint型データを復元
+  Wire.requestFrom(8, 6);
+  if (Wire.available() > 0) {
+    if (Wire.read() == H) {
+      int low1 = Wire.read();
+      int high1 = Wire.read();
+      hr = makeWord(high1, low1);
+      hr_s = String(hr, DEC);
+      Serial.print("HR = ");
+      Serial.println(hr);
+
+      if (hr > THREAD) {
+        digitalWrite(LED_BUILTIN, HIGH);
+      }
+      else {
+        digitalWrite(LED_BUILTIN, LOW);
+      }
     }
-    if (Serial.read() == FOOT) {
-      int low2 = Serial.read(); // 下位バイトの読み取り
-      int high2 = Serial.read(); // 上位バイトの読み取り
+    if (Wire.read() == G) {
+      int low2 = Wire.read();
+      int high2 = Wire.read();
       gsr = makeWord(high2, low2);
+      gsr_s = String(gsr, DEC);
+      Serial.print("GSR = ");
+      Serial.println(gsr);
     }
   }
-
-  if (hr > 500) {
-    digitalWrite(LED_BUILTIN, HIGH);
-  }
-  else {
-    digitalWrite(LED_BUILTIN, LOW);
-  }
-
-  hr_s = String(hr, DEC);
-  gsr_s = String(gsr, DEC);
-
-
-  Serial.print(hr);
-  Serial.print("&");
-  Serial.println(gsr);
-
   server.handleClient();
 }
