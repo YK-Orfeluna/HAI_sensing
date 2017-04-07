@@ -31,9 +31,6 @@ WAVE_OUTPUT_FILENAME, RECORD_SECONDS = rec_time()
 WAVE_OUTPUT_FILENAME += ".wav"
 
 #RECORD_SECONDS = 10
-R_min = RECORD_SECONDS / 60
-R_sec = RECORD_SECONDS % 60
-print("To record %s : %s : 00" %(R_min, R_sec))
 
 p = pyaudio.PyAudio()
 
@@ -46,16 +43,15 @@ frames = []
 start_time = time.time()
 time_flag = 1
 
-for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
+end_time = (12 , 10)
+while True :
 	data = stream.read(CHUNK)
 	frames.append(data)
 
-	now_time = time.time()
-	pass_time = now_time - start_time
-	if pass_time >= 60 :
-		print("%s min." %time_flag)
-		time_flag += 1
-		start_time = now_time
+	check_t = time.localtime()
+	if check_t.tm_hour == end_time[0] and check_t.tm_min >= end_time[1]:
+		break
+
 
 print("* done recording")
 

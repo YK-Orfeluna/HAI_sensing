@@ -25,7 +25,7 @@ HF_MAX = 0.4
 
 CNT = 10							# RRIの数
 CNT *= -1
-C_TIME = 10							# キャリブレーションする時間
+C_TIME = 15							# キャリブレーションする時間
 
 WINDOW_NAME = "dst"
 IMAGE = np.zeros([500, 500, 3], dtype=np.uint8)
@@ -118,13 +118,11 @@ class App() :
 
 				if calib == False :
 					self.rri_box = self.rri_box[1:]								# RRIが一定数になるように調整
-					self.psd(calib=calib)
+					self.psd()
 
-				"""
 				if DEBUG :
 					print("BPM: %s" %self.bpm)
 					print("RRI: %s" %self.rri)
-				"""
 
 			self.heartrate_flag += 1
 
@@ -152,7 +150,7 @@ class App() :
 			self.y = y
 			self.pgram = pgram
 
-	def psd(self, calib=True) :					# 心拍の周波数成分を分析する
+	def psd(self) :					# 心拍の周波数成分を分析する
 		self.lomb()
 
 		if self.hf == 0 :
@@ -164,25 +162,20 @@ class App() :
 		else :
 			self.lf_p = round(self.lf*1.0 / (self.hf + self.lf), 4)
 
-		"""
 		if DEBUG :
 			print("HF: %s" %self.hf)
 			print("LF: %s" %self.lf)
 			print("HF : LF = %s : %s" %(self.hf_p, self.lf_p))
-		"""
 
 	def gsr(self) :
 		value = self.galvanic
 
-		"""
 		if DEBUG and self.heartrate_flag == 1:
 			print("GSR: %s" %value)
-		"""
 
 		return value
 
 	def beat_calib(self) :			# 心拍の初期キャリブレーション	
-		print("* Calibration")
 		start = time.time()
 
 		while True :
@@ -195,8 +188,6 @@ class App() :
 
 			time.sleep(WAIT / 1000.0)
 		self.rri_box = self.rri_box[CNT:]
-
-		print("* done calibration")
 
 	def write(self, name="sensing") :
 		v = self.box[1:]
@@ -238,13 +229,15 @@ class App() :
 			cv2.imshow(WINDOW_NAME, IMAGE)
 			key = cv2.waitKey(WAIT)
 			if key == 27 :
-				self.finish()
+				break
 
-			
-			add = np.array([[time.time(), stamp(), gsr, self.bpm, self.rri, self.hf, self.lf, self.hf_p, self.lf_p]])
-			self.box = np.append(self.box, add, axis=0)
-			if DEBUG :
-				print(add[0][2:])
+			if GSR_FLAG and self.heartrate_flag == 1 :
+				add = np.array([[time.time(), stamp(), gsr, self.bpm, self.rri, self.hf, self.lf, self.hf_p, self.lf_p]])
+				self.box = np.append(self.box, add, axis=0)
+
+			elif GSR_FLAG == False :
+				add = np.array([[time.time(), stamp(), gsr, self.bpm, self.rri, self.hf, self.lf, self.hf_p, self.lf_p]])
+				self.box = np.append(self.box, add, axis=0)
 
 			# To save data-array each 10min.
 			now_time = time.time()
