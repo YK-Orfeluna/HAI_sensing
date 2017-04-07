@@ -30,7 +30,7 @@ C_TIME = 15							# キャリブレーションする時間
 WINDOW_NAME = "dst"
 IMAGE = np.zeros([500, 500, 3], dtype=np.uint8)
 
-fps = 30
+fps = 10
 
 NOUT = 10
 F = np.linspace(LF_MIN, HF_MAX, NOUT)		# 検出したい周波数帯域

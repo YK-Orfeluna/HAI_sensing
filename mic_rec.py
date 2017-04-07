@@ -30,7 +30,10 @@ def rec_time() :
 WAVE_OUTPUT_FILENAME, RECORD_SECONDS = rec_time()
 WAVE_OUTPUT_FILENAME += ".wav"
 
-RECORD_SECONDS = 10
+#RECORD_SECONDS = 10
+R_min = RECORD_SECONDS / 60
+R_sec = RECORD_SECONDS % 60
+print("To record %s : %s : 00" %(R_min, R_sec))
 
 p = pyaudio.PyAudio()
 
