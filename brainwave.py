@@ -108,7 +108,7 @@ class Mind() :
 
 				now_time = time.time()
 				if now_time - start_time >= 10 * 60 :
-					self.csv(name=str(csv_flag))
+					self.csv(name="brain_"+str(csv_flag))
 					start_time = now_time
 					csv_flag += 1
 	

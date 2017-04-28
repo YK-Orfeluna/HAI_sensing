@@ -27,7 +27,7 @@ CNT = 10							# RRIの数
 CNT *= -1
 C_TIME = 10							# キャリブレーションする時間
 
-WINDOW_NAME = "dst"
+WINDOW_NAME = "HR&GSR"
 IMAGE = np.zeros([500, 500, 3], dtype=np.uint8)
 
 fps = 10
@@ -249,7 +249,7 @@ class App() :
 			# To save data-array each 10min.
 			now_time = time.time()
 			if now_time - start_time >= 60 * 10 :
-				self.write(name=str(csv_flag))
+				self.write(name="sensing"+str(csv_flag))
 				start_time = now_time
 				csv_flag += 1
 
