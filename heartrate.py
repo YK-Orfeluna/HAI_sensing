@@ -3,9 +3,8 @@
 import time, sys
 
 import numpy as np
-from scipy import signal
+from scipy.signal import lombscargle
 import pandas as pd
-import serial, pyfirmata
 import cv2
 import lxml.html
 import requests as rq
@@ -15,6 +14,9 @@ DEBUG = True
 
 GSR_FLAG = True
 #GSR_FLAG = False
+
+#PLOT = True
+PLOT = False
 
 HEARTRATE_LINE = 500
 
@@ -27,8 +29,7 @@ CNT = 10							# RRIの数
 CNT *= -1
 C_TIME = 10							# キャリブレーションする時間
 
-WINDOW_NAME = "HR&GSR"
-IMAGE = np.zeros([500, 500, 3], dtype=np.uint8)
+WINDOW_NAME = "HeartRate & GSR"
 
 fps = 10
 
@@ -41,7 +42,6 @@ LED = 2									# 動作確認用LED
 
 LABEL = np.array(["Unix", "TimeStamp", "GSR", "BPM", "RRI", "HF", "LF", "HF(%)", "LF(%)"])
 
-URL = "http://192.168.11.10/"
 TARGET_TXT = "sensorvalue="
 
 def rnd(value, cnm=0) :
@@ -63,8 +63,48 @@ def stamp() :
 		out += s
 	return out
 
+X1, Y1 = 80, 300
+X2, Y2 = 420, 470
+X3, Y3 = X1, 100
+X4, Y4 = X2, 200
+
+def make_img() :
+	global X1, X2, X3, X4
+	global Y1, Y2, Y3, Y4
+
+	black = (0, 0, 0)
+
+	fontsize = 1.5
+	font = cv2.FONT_HERSHEY_SIMPLEX
+	thikness = 5
+	linetype = cv2.LINE_AA
+
+	src = np.zeros([500, 500, 3], dtype=np.uint8)
+	src.fill(255)
+
+	cv2.rectangle(src, (X1, Y1), (X2, Y2), (180, 180, 180), -1)
+	cv2.rectangle(src, (X1, Y1), (X2, Y2), black, 10)
+
+	cv2.rectangle(src, (X3, Y3), (X4, Y4), (180, 180, 180), -1)
+	cv2.rectangle(src, (X3, Y3), (X4, Y4), black, 10)
+
+	cv2.putText(src, "Save Data", (120, 350), font, fontsize, black, thikness, linetype)
+	cv2.putText(src, "&", (220, 400), font, fontsize, black, thikness, linetype)
+	cv2.putText(src, "System Exit", (100, 450), font, fontsize, black, thikness, linetype)
+
+	cv2.putText(src, "Save Data", (120, 170), font, fontsize, black, thikness, linetype)
+
+	return src
+
+
 class App() :
-	def __init__(self) :
+	def __init__(self, url="http://192.168.11.10/") :
+		self.url = url
+
+		self.img = make_img()
+		cv2.namedWindow(WINDOW_NAME)
+		cv2.setMouseCallback(WINDOW_NAME, self.click)
+		
 		self.hr = 0						# sensor-value
 		self.galvanic = 0
 
@@ -82,28 +122,26 @@ class App() :
 
 		self.box = np.zeros([1, LABEL.shape[0]])
 
+	def click(self, event, x, y, flags, param) :
+		if event == cv2.EVENT_LBUTTONDOWN :					# 左クリックを検知
+			if 	X1 <= x <= X2 and Y1 <= y <= Y2 :			# クリック位置が"Save Data & System Exitだった場合"
+				self.write()
+				self.finish()
+			elif X3 <= x <= X4 and Y3 <= y <= Y4 :			# クリック位置が"Save Data"だった場合
+				self.write(name=stamp())
+
 	def scraping(self) :
-		target_html = rq.get(URL).text
+		target_html = rq.get(self.url).text
 		root = lxml.html.fromstring(target_html)
+
 		txt = root.text
 		txt = txt.lstrip(TARGET_TXT)
 
-		val1 = ""
-		val2 = ""
-		flag = 1
+		value = ["", ""]
+		value = txt.split(",")
 
-		for i in txt :
-			if i == "," :
-				flag *= -1
-
-			elif flag == 1 :
-				val1 += i
-			
-			elif flag == -1 :
-				val2 += i
-
-		self.hr = int(val1)
-		self.galvanic = int(val2)
+		self.hr = int(value[0])
+		self.galvanic = int(value[1])
 
 	def beat(self, calib=False) :				# 心拍センサの値から，BPMとRRIを作る
 		value = self.hr
@@ -120,12 +158,6 @@ class App() :
 					self.rri_box = self.rri_box[1:]								# RRIが一定数になるように調整
 					self.psd(calib=calib)
 
-				"""
-				if DEBUG :
-					print("BPM: %s" %self.bpm)
-					print("RRI: %s" %self.rri)
-				"""
-
 			self.heartrate_flag += 1
 
 		else :
@@ -141,7 +173,7 @@ class App() :
 		
 		y = self.rri_box										# yはRRI
 
-		pgram = signal.lombscargle(x, y, F)						# Fは計測したい周波数帯域
+		pgram = lombscargle(x, y, F)							# Fは計測したい周波数帯域
 		pgram = np.sqrt(4*(pgram/normval))						# 正規化
 
 		self.lf = np.mean(pgram[:L])							# [L]以下はLF，それ以外はHF
@@ -164,21 +196,8 @@ class App() :
 		else :
 			self.lf_p = round(self.lf*1.0 / (self.hf + self.lf), 4)
 
-		"""
-		if DEBUG :
-			print("HF: %s" %self.hf)
-			print("LF: %s" %self.lf)
-			print("HF : LF = %s : %s" %(self.hf_p, self.lf_p))
-		"""
-
 	def gsr(self) :
 		value = self.galvanic
-
-		"""
-		if DEBUG and self.heartrate_flag == 1:
-			print("GSR: %s" %value)
-		"""
-
 		return value
 
 	def beat_calib(self) :			# 心拍の初期キャリブレーション	
@@ -217,25 +236,25 @@ class App() :
 
 		cv2.destroyAllWindows()
 
-		if DEBUG :								# 終了時点でのRRIとPSDをプロットする
+		if PLOT :								# 終了時点でのRRIとPSDをプロットする
 			self.plot()
 
 		sys.exit("System Exit")
 
 	def main(self) :
-
 		self.beat_calib()
-		#self.psd()
 
 		start_time = time.time()
 		csv_flag = 1
+
+		print(LABEL[1:])
 
 		while True :
 			self.scraping()
 			self.beat()
 			gsr = self.gsr()
 
-			cv2.imshow(WINDOW_NAME, IMAGE)
+			cv2.imshow(WINDOW_NAME, self.img)
 			key = cv2.waitKey(WAIT)
 			if key == 27 :
 				self.finish()
@@ -244,7 +263,7 @@ class App() :
 			add = np.array([[time.time(), stamp(), gsr, self.bpm, self.rri, self.hf, self.lf, self.hf_p, self.lf_p]])
 			self.box = np.append(self.box, add, axis=0)
 			if DEBUG :
-				print(add[0][2:])
+				print(add[0][1:])
 
 			# To save data-array each 10min.
 			now_time = time.time()
