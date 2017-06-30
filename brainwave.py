@@ -36,7 +36,8 @@ def make_img() :
 	fontsize = 1.5
 	font = cv2.FONT_HERSHEY_SIMPLEX
 	thikness = 5
-	linetype = cv2.LINE_AA
+	if 
+	linetype = cv2.CV_AA
 
 	src = np.zeros([500, 500, 3], dtype=np.uint8)
 	src.fill(255)
